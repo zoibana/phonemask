@@ -1,10 +1,11 @@
 {
   "name": "@zoibana/phonemask",
   "version": "1.0.0",
-  "description": "",
+  "description": "Phone mask for Russian phone numbers",
   "main": "dist/phonemask.js",
   "scripts": {},
-  "keywords": [],
+  "keywords": ["phone","phonemask","inputmask","input-mask","mask"],
   "author": "zoibana@gmail.com",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": "git@github.com:zoibana/phonemask.git"
 }
