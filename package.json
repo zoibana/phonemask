@@ -1,0 +1,10 @@
+{
+  "name": "@zoibana/phonemask",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/phonemask.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "zoibana@gmail.com",
+  "license": "ISC"
+}
