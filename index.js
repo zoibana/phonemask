@@ -65,8 +65,14 @@ class ZoibanaPhonemask {
             return;
         }
 
-        if (["7", "8", "9"].indexOf(inputNumbersValue[0]) > -1 && inputNumbersValue.length <= 11
-            && (inputNumbersValue[0] === "7" || input.value[0] !== "+")) {
+        // Russian phone
+        if (["7", "8", "9"].indexOf(inputNumbersValue[0]) > -1 && (inputNumbersValue[0] === "7" || input.value[0] !== "+")) {
+
+            // Russian number must be 11 digits length
+            if(inputNumbersValue.length > 11){
+                inputNumbersValue= inputNumbersValue.substring(0, 11);
+            }
+
             if (inputNumbersValue[0] === "9") {
                 inputNumbersValue = "7" + inputNumbersValue;
             }
@@ -90,6 +96,8 @@ class ZoibanaPhonemask {
                 formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
             }
         } else {
+            // Non-russian phone
+            // Ignore formatting, but allow to enter phone
             formattedInputValue = '+' + inputNumbersValue.substring(0, 16);
         }
         input.value = formattedInputValue;
