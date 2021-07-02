@@ -124,6 +124,4 @@ class ZoibanaPhonemask {
 
 }
 
-module.exports = (selector) => {
-    return new ZoibanaPhonemask(selector);
-}
+module.exports = ZoibanaPhonemask;
