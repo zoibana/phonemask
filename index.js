@@ -14,8 +14,46 @@ class ZoibanaPhonemask {
         });
     }
 
+    isRussianNumber(input) {
+        let inputNumbersValue = this.inputNumberValue(input);
+        return ["7", "8", "9"].indexOf(inputNumbersValue[0]) > -1 && (inputNumbersValue[0] === "7" || input.value[0] !== "+");
+    }
+
     inputNumberValue(input) {
         return input.value.replace(/\D/g, '');
+    }
+
+    formatPhoneNumber(inputNumbersValue) {
+
+        // Russian number must be 11 digits length
+        if (inputNumbersValue.length > 11) {
+            inputNumbersValue = inputNumbersValue.substring(0, 11);
+        }
+
+        if (inputNumbersValue[0] === "9") {
+            inputNumbersValue = "7" + inputNumbersValue;
+        }
+        let firstSymbols = (inputNumbersValue[0] === "8") ? "8" : "+7";
+
+        let formattedInputValue = firstSymbols + " ";
+
+        if (inputNumbersValue.length > 1) {
+            formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
+        }
+
+        if (inputNumbersValue.length >= 5) {
+            formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
+        }
+
+        if (inputNumbersValue.length >= 8) {
+            formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
+        }
+
+        if (inputNumbersValue.length >= 10) {
+            formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
+        }
+
+        return formattedInputValue;
     }
 
     onPaste(e) {
@@ -27,9 +65,14 @@ class ZoibanaPhonemask {
             let pastedText = pasted.getData('Text');
 
             if (/\D/g.test(pastedText)) {
+
+                if (!inputNumbersValue) {
+                    inputNumbersValue = pastedText.replace(/\D/g, '');
+                }
+
                 // Attempt to paste non-numeric symbol — remove all non-numeric symbols,
                 // formatting will be in onPhoneInput handler
-                input.value = inputNumbersValue;
+                input.value = this.formatPhoneNumber(inputNumbersValue);
             }
         }
     }
@@ -52,7 +95,7 @@ class ZoibanaPhonemask {
         // Editing in the middle of input, not last symbol
         if (input.value.length !== selectionStart) {
 
-            if (input.value[0] !== '+') { // Add "+" if input value startswith not "+"
+            if (input.value[0] !== '+') { // Add "+" if input value starts with not "+"
                 let oldSelectionStart = input.selectionStart
                 input.value = '+' + input.value;
                 input.selectionStart = input.selectionEnd = oldSelectionStart + 1;
@@ -60,41 +103,22 @@ class ZoibanaPhonemask {
 
             if (e.data && /\D/g.test(e.data)) {
                 // Attempt to input non-numeric symbol
-                input.value = inputNumbersValue;
+                input.value = this.formatPhoneNumber(inputNumbersValue);
+                input.selectionStart = input.selectionEnd = selectionStart - 1;
             }
+
+            // do not allow to enter digits if phone length is full
+            if (inputNumbersValue.length > 11) {
+                input.value = input.value.substring(0, selectionStart - 1) + input.value.substring(selectionStart, 19);
+                input.selectionStart = input.selectionEnd = selectionStart - 1;
+            }
+
             return;
         }
 
         // Russian phone
-        if (["7", "8", "9"].indexOf(inputNumbersValue[0]) > -1 && (inputNumbersValue[0] === "7" || input.value[0] !== "+")) {
-
-            // Russian number must be 11 digits length
-            if(inputNumbersValue.length > 11){
-                inputNumbersValue= inputNumbersValue.substring(0, 11);
-            }
-
-            if (inputNumbersValue[0] === "9") {
-                inputNumbersValue = "7" + inputNumbersValue;
-            }
-            let firstSymbols = (inputNumbersValue[0] === "8") ? "8" : "+7";
-
-            formattedInputValue = input.value = firstSymbols + " ";
-
-            if (inputNumbersValue.length > 1) {
-                formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
-            }
-
-            if (inputNumbersValue.length >= 5) {
-                formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
-            }
-
-            if (inputNumbersValue.length >= 8) {
-                formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
-            }
-
-            if (inputNumbersValue.length >= 10) {
-                formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
-            }
+        if (this.isRussianNumber(input)) {
+            formattedInputValue = this.formatPhoneNumber(inputNumbersValue);
         } else {
             // Non-russian phone
             // Ignore formatting, but allow to enter phone
