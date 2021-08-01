@@ -3,15 +3,26 @@ class ZoibanaPhonemask {
     constructor(selector) {
         let that = this;
 
-        document.addEventListener("DOMContentLoaded", function () {
-            let inputs = document.querySelectorAll(selector);
+        if (typeof selector === 'object') {
 
-            for (let phoneInput of inputs) {
-                phoneInput.addEventListener('keydown', (e) => that.onKeyDown(e));
-                phoneInput.addEventListener('input', (e) => that.onInput(e), false);
-                phoneInput.addEventListener('paste', (e) => that.onPaste(e), false);
-            }
-        });
+            that.initEventsOnElement(selector);
+
+        } else {
+
+            document.addEventListener("DOMContentLoaded", function () {
+                let inputs = document.querySelectorAll(selector);
+
+                for (let phoneInput of inputs) {
+                    that.initEventsOnElement(phoneInput);
+                }
+            });
+        }
+    }
+
+    initEventsOnElement(element) {
+        element.addEventListener('keydown', (e) => this.onKeyDown(e));
+        element.addEventListener('input', (e) => this.onInput(e), false);
+        element.addEventListener('paste', (e) => this.onPaste(e), false);
     }
 
     isRussianNumber(input) {

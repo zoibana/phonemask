@@ -27,6 +27,9 @@ const PhoneMask = require('@zoibana/phonemask');
 // или через import
 import PhoneMask from '@zoibana/phonemask'
 
+// Можно навесить маску на элемент, передав его в конструктор
+new PhoneMask(inputEl);
+
 // Можно навесить маску на поле через его ID
 new PhoneMask('#phone-input');
 
