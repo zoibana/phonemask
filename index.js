@@ -89,6 +89,11 @@ class ZoibanaPhonemask {
     }
 
     onInput(e) {
+
+        if (!e.isTrusted) {
+            return;
+        }
+
         let input = e.target;
         let inputNumbersValue = this.inputNumberValue(input);
         let selectionStart = input.selectionStart;
@@ -136,6 +141,9 @@ class ZoibanaPhonemask {
             formattedInputValue = '+' + inputNumbersValue.substring(0, 16);
         }
         input.value = formattedInputValue;
+
+        input.dispatchEvent(new Event('input'));
+        return false;
     }
 
     onKeyDown(e) {
