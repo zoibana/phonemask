@@ -1,19 +1,18 @@
 class ZoibanaPhonemask {
 
     constructor(selector) {
-        let that = this;
 
         if (typeof selector === 'object') {
 
-            that.initEventsOnElement(selector);
+            this.initEventsOnElement(selector);
 
         } else {
 
-            document.addEventListener("DOMContentLoaded", function () {
+            document.addEventListener("DOMContentLoaded",  () =>  {
                 let inputs = document.querySelectorAll(selector);
 
                 for (let phoneInput of inputs) {
-                    that.initEventsOnElement(phoneInput);
+                    this.initEventsOnElement(phoneInput);
                 }
             });
         }
@@ -23,6 +22,10 @@ class ZoibanaPhonemask {
         element.addEventListener('keydown', (e) => this.onKeyDown(e));
         element.addEventListener('input', (e) => this.onInput(e), false);
         element.addEventListener('paste', (e) => this.onPaste(e), false);
+
+        if (element.value.length) {
+            element.value = this.formatPhoneNumber(element.value);
+        }
     }
 
     isRussianNumber(input) {
