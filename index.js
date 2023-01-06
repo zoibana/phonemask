@@ -24,7 +24,7 @@ class ZoibanaPhonemask {
         element.addEventListener('paste', (e) => this.onPaste(e), false);
 
         if (element.value.length) {
-            element.value = this.formatPhoneNumber(element.value);
+            element.value = this.formatPhoneNumber(element.value.replace(/\D/g, ''));
         }
     }
 
