@@ -1,6 +1,6 @@
 {
   "name": "@zoibana/phonemask",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Phone mask for Russian phone numbers",
   "main": "dist/phonemask.js",
   "scripts": {},

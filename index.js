@@ -8,7 +8,7 @@ class ZoibanaPhonemask {
 
         } else {
 
-            document.addEventListener("DOMContentLoaded",  () =>  {
+            document.addEventListener("DOMContentLoaded", () => {
                 let inputs = document.querySelectorAll(selector);
 
                 for (let phoneInput of inputs) {
@@ -24,13 +24,12 @@ class ZoibanaPhonemask {
         element.addEventListener('paste', (e) => this.onPaste(e), false);
 
         if (element.value.length) {
-            element.value = this.formatPhoneNumber(element.value.replace(/\D/g, ''));
+            element.value = this.formatPhoneNumber(element.value.replace(/[^\d+]+/g, ''));
         }
     }
 
-    isRussianNumber(input) {
-        let inputNumbersValue = this.inputNumberValue(input);
-        return ["7", "8", "9"].indexOf(inputNumbersValue[0]) > -1 && (inputNumbersValue[0] === "7" || input.value[0] !== "+");
+    isRussianNumber(numericValue) {
+        return ["7", "8", "9"].indexOf(numericValue[0]) > -1;
     }
 
     inputNumberValue(input) {
@@ -39,32 +38,47 @@ class ZoibanaPhonemask {
 
     formatPhoneNumber(inputNumbersValue) {
 
+        const hasPlus = inputNumbersValue[0] === '+';
+        const cleanNumber = inputNumbersValue.replace(/\D/g, '');
+        const isRussanNumber = this.isRussianNumber(cleanNumber);
+
         // Russian number must be 11 digits length
-        if (inputNumbersValue.length > 11) {
-            inputNumbersValue = inputNumbersValue.substring(0, 11);
+        if (!hasPlus && cleanNumber.length > 11) {
+            cleanNumber = cleanNumber.substring(0, 11);
         }
 
-        if (inputNumbersValue[0] === "9") {
-            inputNumbersValue = "7" + inputNumbersValue;
-        }
-        let firstSymbols = (inputNumbersValue[0] === "8") ? "8" : "+7";
-
-        let formattedInputValue = firstSymbols + " ";
-
-        if (inputNumbersValue.length > 1) {
-            formattedInputValue += '(' + inputNumbersValue.substring(1, 4);
+        if (cleanNumber[0] === "9") {
+            cleanNumber = "7" + cleanNumber;
         }
 
-        if (inputNumbersValue.length >= 5) {
-            formattedInputValue += ') ' + inputNumbersValue.substring(4, 7);
+        let firstSymbols = '+';
+
+        if (isRussanNumber) {
+            firstSymbols += "7";
         }
 
-        if (inputNumbersValue.length >= 8) {
-            formattedInputValue += '-' + inputNumbersValue.substring(7, 9);
-        }
+        let formattedInputValue = firstSymbols;
 
-        if (inputNumbersValue.length >= 10) {
-            formattedInputValue += '-' + inputNumbersValue.substring(9, 11);
+        if (isRussanNumber) {
+            inputNumbersValue += ' ';
+
+            if (inputNumbersValue.length > 1) {
+                formattedInputValue += '(' + cleanNumber.substring(1, 4);
+            }
+
+            if (inputNumbersValue.length >= 5) {
+                formattedInputValue += ') ' + cleanNumber.substring(4, 7);
+            }
+
+            if (inputNumbersValue.length >= 8) {
+                formattedInputValue += '-' + cleanNumber.substring(7, 9);
+            }
+
+            if (inputNumbersValue.length >= 10) {
+                formattedInputValue += '-' + cleanNumber.substring(9, 11);
+            }
+        } else {
+            formattedInputValue += cleanNumber;
         }
 
         return formattedInputValue;
@@ -136,7 +150,10 @@ class ZoibanaPhonemask {
         }
 
         // Russian phone
-        if (this.isRussianNumber(input)) {
+
+        const numericValue = this.inputNumberValue(input);
+
+        if (this.isRussianNumber(numericValue)) {
             formattedInputValue = this.formatPhoneNumber(inputNumbersValue);
         } else {
             // Non-russian phone
@@ -146,6 +163,7 @@ class ZoibanaPhonemask {
         input.value = formattedInputValue;
 
         input.dispatchEvent(new Event('input'));
+
         return false;
     }
 
