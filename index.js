@@ -40,7 +40,7 @@ class ZoibanaPhonemask {
 
         const hasPlus = inputNumbersValue[0] === '+';
         let cleanNumber = inputNumbersValue.replace(/\D/g, '');
-        const isRussanNumber = this.isRussianNumber(cleanNumber);
+        const isRussianNumber = this.isRussianNumber(cleanNumber);
 
         // Russian number must be 11 digits length
         if (!hasPlus && cleanNumber.length > 11) {
@@ -53,28 +53,28 @@ class ZoibanaPhonemask {
 
         let firstSymbols = '+';
 
-        if (isRussanNumber) {
+        if (isRussianNumber) {
             firstSymbols += "7";
         }
 
         let formattedInputValue = firstSymbols;
 
-        if (isRussanNumber) {
+        if (isRussianNumber) {
             inputNumbersValue += ' ';
 
             if (inputNumbersValue.length > 1) {
                 formattedInputValue += '(' + cleanNumber.substring(1, 4);
             }
 
-            if (inputNumbersValue.length >= 5) {
+            if (inputNumbersValue.length > 5) {
                 formattedInputValue += ') ' + cleanNumber.substring(4, 7);
             }
 
-            if (inputNumbersValue.length >= 8) {
+            if (inputNumbersValue.length > 8) {
                 formattedInputValue += '-' + cleanNumber.substring(7, 9);
             }
 
-            if (inputNumbersValue.length >= 10) {
+            if (inputNumbersValue.length > 10) {
                 formattedInputValue += '-' + cleanNumber.substring(9, 11);
             }
         } else {
