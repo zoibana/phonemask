@@ -39,7 +39,7 @@ class ZoibanaPhonemask {
     formatPhoneNumber(inputNumbersValue) {
 
         const hasPlus = inputNumbersValue[0] === '+';
-        const cleanNumber = inputNumbersValue.replace(/\D/g, '');
+        let cleanNumber = inputNumbersValue.replace(/\D/g, '');
         const isRussanNumber = this.isRussianNumber(cleanNumber);
 
         // Russian number must be 11 digits length
