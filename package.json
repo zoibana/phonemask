@@ -1,8 +1,14 @@
 {
   "name": "@zoibana/phonemask",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Phone mask for Russian phone numbers",
-  "main": "dist/phonemask.js",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js"
+    }
+  },
   "scripts": {},
   "keywords": [
     "inputmask",

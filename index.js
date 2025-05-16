@@ -1,199 +1,175 @@
 class ZoibanaPhonemask {
+	/**
+	 * @param {string|HTMLElement} selector — CSS-селектор или сам input-элемент
+	 */
+	constructor(selector) {
+		if (selector instanceof HTMLElement) {
+			this.initEventsOnElement(selector);
+		} else if (typeof selector === 'string') {
+			const runInit = () => {
+				document.querySelectorAll(selector).forEach(el => this.initEventsOnElement(el));
+			};
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', runInit);
+			} else {
+				runInit();
+			}
+		} else {
+			throw new Error('ZoibanaPhonemask: selector must be a string or DOM element');
+		}
+	}
 
-    constructor(selector) {
+	/** Удаляет всё, кроме цифр */
+	stripNonDigits(str) {
+		return String(str).replace(/\D/g, '');
+	}
 
-        if (typeof selector === 'object') {
+	/** Проверка на российский номер по первой цифре */
+	isRussianNumber(digits) {
+		return ['7', '8', '9'].includes(digits.charAt(0));
+	}
 
-            this.initEventsOnElement(selector);
+	/**
+	 * Форматирует строку цифр:
+	 * — для РФ: +7(XXX) XXX-XX-XX
+	 * — для остальных: +[цифры]
+	 */
+	formatPhoneNumber(digits) {
+		let clean = this.stripNonDigits(digits);
 
-        } else {
+		if (clean.charAt(0) === '9') {
+			clean = '7' + clean;
+		}
 
-            document.addEventListener("DOMContentLoaded", () => {
-                let inputs = document.querySelectorAll(selector);
+		const russian = this.isRussianNumber(clean);
+		clean = clean.substring(0, russian ? 11 : 16);
 
-                for (let phoneInput of inputs) {
-                    this.initEventsOnElement(phoneInput);
-                }
-            });
-        }
-    }
+		if (russian) {
+			const parts = ['+7'];
+			if (clean.length > 1) parts.push('(' + clean.slice(1, 4) + ')');
+			if (clean.length > 4) parts.push(' ' + clean.slice(4, 7));
+			if (clean.length > 7) parts.push('-' + clean.slice(7, 9));
+			if (clean.length > 9) parts.push('-' + clean.slice(9, 11));
+			return parts.join('');
+		} else {
+			return '+' + clean;
+		}
+	}
 
-    initEventsOnElement(element) {
-        element.addEventListener('keydown', (e) => this.onKeyDown(e));
-        element.addEventListener('input', (e) => this.onInput(e), false);
-        element.addEventListener('paste', (e) => this.onPaste(e), false);
+	/**
+	 * По отформатированной строке находит позицию курсора,
+	 * соответствующую заданному количеству цифр до курсора.
+	 * digitCount — число цифровых символов слева от курсора.
+	 */
+	findCursorPos(formatted, digitCount) {
+		let count = 0;
+		for (let i = 0; i < formatted.length; i++) {
+			if (/\d/.test(formatted[i])) {
+				count++;
+				if (count === digitCount) {
+					// ставим курсор **после** этого символа
+					return i + 1;
+				}
+			}
+		}
+		// если не нашли (например, digitCount=0), возвращаем 0 или конец
+		return digitCount === 0 ? 0 : formatted.length;
+	}
 
-        if (element.value.length) {
-            element.value = this.formatPhoneNumber(element.value.replace(/[^\d+]+/g, ''));
-        }
-    }
+	/** Навешиваем обработчики на конкретный input */
+	initEventsOnElement(element) {
+		element.addEventListener('keydown', e => this.onKeyDown(e));
+		element.addEventListener('input', e => this.onInput(e), false);
+		element.addEventListener('paste', e => this.onPaste(e), false);
 
-    isRussianNumber(numericValue) {
-        return ["7", "8", "9"].indexOf(numericValue[0]) > -1;
-    }
+		if (element.value) {
+			const digits = this.stripNonDigits(element.value);
+			element.value = digits ? this.formatPhoneNumber(digits) : '';
+		}
+	}
 
-    inputNumberValue(input) {
-        return input.value.replace(/\D/g, '');
-    }
+	/** Перехватываем вставку, форматируем и сохраняем курсор в конец вставленных цифр */
+	onPaste(e) {
+		e.preventDefault();
+		const input = e.target;
+		const pasted = (e.clipboardData || window.clipboardData).getData('text');
+		const newDigits = this.stripNonDigits(pasted);
+		const existing = this.stripNonDigits(input.value);
+		const combined = existing + newDigits;
 
-    formatPhoneNumber(inputNumbersValue) {
+		const formatted = combined ? this.formatPhoneNumber(combined) : '';
+		input.value = formatted;
 
-        const hasPlus = inputNumbersValue[0] === '+';
-        let cleanNumber = inputNumbersValue.replace(/\D/g, '');
-        const isRussianNumber = this.isRussianNumber(cleanNumber);
+		// ставим курсор после всех вставленных цифр
+		const totalDigits = this.stripNonDigits(formatted).length;
+		const pos = this.findCursorPos(formatted, totalDigits);
+		input.setSelectionRange(pos, pos);
+	}
 
-        // Russian number must be 11 digits length
-        if (!hasPlus && cleanNumber.length > 11) {
-            cleanNumber = cleanNumber.substring(0, 11);
-        }
+	/** Обработка ввода: формат + сохранение курсора */
+	onInput(e) {
+		if (!e.isTrusted) return;
+		const input = e.target;
 
-        if (cleanNumber[0] === "9") {
-            cleanNumber = "7" + cleanNumber;
-        }
+		// если пользователь лишь ввёл "+"
+		if (input.value === '+') {
+			return;
+		}
 
-        let firstSymbols = '+';
+		// запомним позицию и число цифр до неё
+		const prevPos = input.selectionStart;
+		const rawValue = input.value;
+		let digitsCount = 0;
+		for (let i = 0; i < prevPos; i++) {
+			if (/\d/.test(rawValue[i])) digitsCount++;
+		}
 
-        if (isRussianNumber) {
-            firstSymbols += "7";
-        }
+		const digits = this.stripNonDigits(rawValue);
+		if (!digits) {
+			input.value = '';
+			return;
+		}
 
-        let formattedInputValue = firstSymbols;
+		const formatted = this.formatPhoneNumber(digits);
+		input.value = formatted;
 
-        if (isRussianNumber) {
-            inputNumbersValue += ' ';
+		// вычислим, где курсор должен оказаться
+		const newPos = this.findCursorPos(formatted, digitsCount);
+		input.setSelectionRange(newPos, newPos);
+	}
 
-            if (inputNumbersValue.length > 1) {
-                formattedInputValue += '(' + cleanNumber.substring(1, 4);
-            }
+	/**
+	 * При попытке удалить служебный символ —
+	 * «перескакиваем» через него, не сбрасывая курсор в конец.
+	 */
+	onKeyDown(e) {
+		const input = e.target;
+		const pos = input.selectionStart;
+		const val = input.value;
+		const digits = this.stripNonDigits(val);
+		const fmtChars = ['(', ')', ' ', '-'];
 
-            if (inputNumbersValue.length > 5) {
-                formattedInputValue += ') ' + cleanNumber.substring(4, 7);
-            }
+		if (e.key === 'Backspace') {
+			if (digits.length <= 1) {
+				e.preventDefault();
+				input.value = '';
+				return;
+			}
+			if (pos > 0 && fmtChars.includes(val.charAt(pos - 1))) {
+				e.preventDefault();
+				// перескочить через символ форматирования влево
+				input.setSelectionRange(pos - 1, pos - 1);
+			}
+		}
 
-            if (inputNumbersValue.length > 8) {
-                formattedInputValue += '-' + cleanNumber.substring(7, 9);
-            }
-
-            if (inputNumbersValue.length > 10) {
-                formattedInputValue += '-' + cleanNumber.substring(9, 11);
-            }
-        } else {
-            formattedInputValue += cleanNumber;
-        }
-
-        return formattedInputValue;
-    }
-
-    onPaste(e) {
-        let input = e.target;
-        let inputNumbersValue = this.inputNumberValue(input);
-        let pasted = e.clipboardData || window.clipboardData;
-
-        if (pasted) {
-            let pastedText = pasted.getData('Text');
-
-            if (/\D/g.test(pastedText)) {
-
-                if (!inputNumbersValue) {
-                    inputNumbersValue = pastedText.replace(/\D/g, '');
-                }
-
-                // Attempt to paste non-numeric symbol — remove all non-numeric symbols,
-                // formatting will be in onPhoneInput handler
-                input.value = this.formatPhoneNumber(inputNumbersValue);
-            }
-        }
-    }
-
-    onInput(e) {
-
-        if (!e.isTrusted) {
-            return;
-        }
-
-        let input = e.target;
-        let inputNumbersValue = this.inputNumberValue(input);
-        let selectionStart = input.selectionStart;
-        let formattedInputValue = "";
-
-        if (!inputNumbersValue) {
-
-            if (e.data === '+') {
-                return input.value = "+";
-            }
-
-            return input.value = "";
-        }
-
-        // Editing in the middle of input, not last symbol
-        if (input.value.length !== selectionStart) {
-
-            if (input.value[0] !== '+') { // Add "+" if input value starts with not "+"
-                let oldSelectionStart = input.selectionStart
-                input.value = '+' + input.value;
-                input.selectionStart = input.selectionEnd = oldSelectionStart + 1;
-            }
-
-            if (e.data && /\D/g.test(e.data)) {
-                // Attempt to input non-numeric symbol
-                input.value = this.formatPhoneNumber(inputNumbersValue);
-                input.selectionStart = input.selectionEnd = selectionStart - 1;
-            }
-
-            // do not allow to enter digits if phone length is full
-            if (inputNumbersValue.length > 11) {
-                input.value = input.value.substring(0, selectionStart - 1) + input.value.substring(selectionStart, 19);
-                input.selectionStart = input.selectionEnd = selectionStart - 1;
-            }
-
-            return;
-        }
-
-        // Russian phone
-
-        const numericValue = this.inputNumberValue(input);
-
-        if (this.isRussianNumber(numericValue)) {
-            formattedInputValue = this.formatPhoneNumber(inputNumbersValue);
-        } else {
-            // Non-russian phone
-            // Ignore formatting, but allow to enter phone
-            formattedInputValue = '+' + inputNumbersValue.substring(0, 16);
-        }
-        input.value = formattedInputValue;
-
-        input.dispatchEvent(new Event('input'));
-
-        return false;
-    }
-
-    onKeyDown(e) {
-
-        // Clear input after remove last symbol
-        let inputValue = e.target.value.replace(/\D/g, '');
-
-        if (e.keyCode === 8 && inputValue.length <= 1) {
-
-            // Clear input after remove last symbol
-            e.target.value = "";
-
-        } else if ([8, 46].indexOf(e.keyCode) > -1 && inputValue.length > 1) {
-
-            // Prevent when removing service symbols
-            let symToClear = '';
-
-            switch (e.keyCode) {
-                case 8: // BackSpace key
-                    symToClear = e.target.value[e.target.selectionStart - 1];
-                    break;
-                case 46: // Delete key
-                    symToClear = e.target.value[e.target.selectionStart];
-                    break;
-            }
-            if (symToClear && /\D/.test(symToClear)) e.preventDefault();
-        }
-    }
-
+		if (e.key === 'Delete') {
+			if (digits.length > 1 && fmtChars.includes(val.charAt(pos))) {
+				e.preventDefault();
+				// перескочить через символ форматирования вправо
+				input.setSelectionRange(pos + 1, pos + 1);
+			}
+		}
+	}
 }
 
 module.exports = ZoibanaPhonemask;
